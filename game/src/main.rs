@@ -25,6 +25,9 @@ use block_mesh::{ndshape::{ConstShape3u32, ConstShape}, GreedyQuadsBuffer, greed
 
 use block::{BoolVoxel, FULL, EMPTY};
 use data::vertices;
+use ::noise::{Fbm, Perlin, Seedable};
+
+use crate::chunk::Chunk;
 
 fn main() {
     let scr_width: u32 = 1280;
@@ -109,17 +112,17 @@ println!("test_vertices.len(), {}", test_vertices.len());
 
     let mut window = Window::init(
         1280,
-        720, 
-        "test", 
-        WindowMode::Windowed, 
+        720,
+        "test",
+        WindowMode::Windowed,
         vec![
-            WindowHint::ContextVersion(3, 3), 
+            WindowHint::ContextVersion(3, 3),
             WindowHint::OpenGlProfile(OpenGlProfileHint::Core)
             ]
         ).unwrap();
-    
+
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
-    
+
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
     }
@@ -128,6 +131,9 @@ println!("test_vertices.len(), {}", test_vertices.len());
     window.set_framebuffer_size_polling(true);
     window.set_scroll_polling(true);
     window.set_cursor_mode(CursorMode::Disabled);
+
+    let noise = Fbm::<Perlin>::default().set_seed(0);
+    let chunk = Chunk::new(vec3(0, 0, 0), &noise);
 
     let mut vao: u32 = 0;
     let mut vbo: u32 = 0;
@@ -206,10 +212,10 @@ println!("test_vertices.len(), {}", test_vertices.len());
 
     }
 
-    unsafe {
-        gl::BindVertexArray(vao);
-        gl::BindTexture(gl::TEXTURE_2D, texture);
-    }
+    //unsafe {
+    //    gl::BindVertexArray(vao);
+    //    gl::BindTexture(gl::TEXTURE_2D, texture);
+    //}
 
     let shader_program = Shader::new("triangle.vert", "triangle.frag");
 
@@ -240,8 +246,10 @@ println!("test_vertices.len(), {}", test_vertices.len());
         }
 
         unsafe {
-            shader_program.use_program();
-            gl::DrawArrays(gl::TRIANGLES, 0, (test_vertices.len() / 3) as i32);
+            //shader_program.use_program();
+            //gl::DrawArrays(gl::TRIANGLES, 0, (test_vertices.len() / 3) as i32);
+
+            chunk.draw(&texture, &shader_program)
         }
 
         window.swap_buffers();

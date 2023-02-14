@@ -35,13 +35,13 @@ pub struct Block(pub u8);
 
 impl Default for Block {
     fn default() -> Self {
-        Self(1)
+        Self::AIR
     }
 }
 
 impl Voxel for Block {
     fn get_visibility(&self) -> VoxelVisibility {
-        if self.0 == 0 {
+        if *self == Block::AIR {
             VoxelVisibility::Empty
         } else {
             VoxelVisibility::Opaque
