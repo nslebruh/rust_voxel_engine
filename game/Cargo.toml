@@ -1,14 +1,13 @@
 [package]
-name = "engine"
+name = "game"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+block-mesh = "0.2.0"
+engine = {path = "../engine", version = "0.1.0"}
 gl = "0.14.0"
-glfw = "0.50.0"
 image = "0.24.5"
-nalgebra = "0.32.1"
-nalgebra-glm = "0.18.0"
-thiserror = "1.0.38"
+noise = "0.8.2"

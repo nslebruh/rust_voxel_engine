@@ -1,7 +1,7 @@
-use cgmath::*;
+use nalgebra::*;
 
-type Vector3 = cgmath::Vector3<f32>;
-type Point3 = cgmath::Point3<f32>;
+type Vector3 = nalgebra::Vector3<f32>;
+type Point3 = nalgebra::Point3<f32>;
 
 
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
@@ -47,10 +47,10 @@ impl Default for Camera {
     fn default() -> Self {
         let mut camera = Self {
             position: Point3::new(0.0, 0.0, 0.0),
-            front: vec3(0.0, 0.0, -1.0),
-            up: Vector3::zero(),
-            right: Vector3::zero(),
-            world_up: Vector3::unit_y(),
+            front: Vector3::new(0.0, 0.0, -1.0),
+            up: Vector3::new(0.0, 0.0, 0.0),
+            right: Vector3::new(0.0, 0.0, 0.0),
+            world_up: Vector3::new(0.0, 1.0, 0.0),
             yaw: YAW,
             pitch: PITCH,
             movement_speed: SPEED,
@@ -66,7 +66,7 @@ impl Default for Camera {
 
 impl Camera {
     pub fn get_view_matrix(&self) -> Matrix4<f32> {
-        Matrix4::<f32>::look_at_rh(self.position, self.position + self.front, self.up)
+        Matrix4::<f32>::look_at_rh(&self.position, &(self.position + &self.front), &self.up)
     }
 
     pub fn process_action_input(&mut self, direction: CameraMovement, delta_time: &f32) {
@@ -128,14 +128,14 @@ impl Camera {
 
     fn update_camera_vectors(&mut self) {
         // Calculate the new Front vector
-        let front = Vector3 {
-            x: self.yaw.to_radians().cos() * self.pitch.to_radians().cos(),
-            y: self.pitch.to_radians().sin(),
-            z: self.yaw.to_radians().sin() * self.pitch.to_radians().cos(),
-        };
+        let front = Vector3::new (
+            self.yaw.to_radians().cos() * self.pitch.to_radians().cos(),
+            self.pitch.to_radians().sin(),
+            self.yaw.to_radians().sin() * self.pitch.to_radians().cos(),
+        );
         self.front = front.normalize();
         // Also re-calculate the Right and Up vector
-        self.right = self.front.cross(self.world_up).normalize(); // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-        self.up = self.right.cross(self.front).normalize();
+        self.right = self.front.cross(&self.world_up).normalize(); // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+        self.up = self.right.cross(&self.front).normalize();
     }
 }

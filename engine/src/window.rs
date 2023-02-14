@@ -1,40 +1,62 @@
+use std::sync::mpsc::Receiver;
+use thiserror::Error;
+
+use glfw::{WindowEvent, InitError, Context};
+
+use super::camera::Camera;
+
+#[derive(Debug, Error)]
+pub enum WindowInitError {
+    #[error("Failed to initialise glfw")]
+    InitError(InitError),
+    #[error("Failed to create glfw window")]
+    CreationError(String)
+}
+
+#[allow(dead_code)]
 pub struct Window {
     pub context: glfw::Glfw,
     pub window: glfw::Window,
-    pub receiver: std::sync::mpsc::Receiver<(f64, glfw::WindowEvent)>,
+    pub receiver: Receiver<(f64, WindowEvent)>,
     pub is_fullscreen: bool,
     pub last_pos: (i32, i32),
     pub last_size: (i32, i32)
 }
 
 impl Window {
-    pub fn init(width: u32, height: u32, title: &str, mode: glfw::WindowMode, hints: Vec<glfw::WindowHint>) -> Self {
-        let glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-        for hint in hints {
-            glfw.window_hint(hint)
-        }
-        let window = glfw.create_window(width, height, title, mode);
-        match window {
-            Some(window_res) => {
-                Self {
-                    context: glfw,
-                    window: window_res.0,
-                    receiver: window_res.1,
-                    last_pos: (0, 0),
-                    last_size: (width as i32, height as i32),
-                    is_fullscreen: match mode {
-                        glfw::WindowMode::FullScreen(_) => true,
-                        glfw::WindowMode::Windowed => false
+    pub fn init(width: u32, height: u32, title: &str, mode: glfw::WindowMode, hints: Vec<glfw::WindowHint>) -> Result<Self, WindowInitError> {
+        let glfw = glfw::init(glfw::FAIL_ON_ERRORS);
+        match glfw {
+            Ok(mut glfw_res) => {
+                for hint in hints {
+                    glfw_res.window_hint(hint)
+                }
+                let window = glfw_res.create_window(width, height, title, mode);
+                match window {
+                    Some(window_res) => {
+                        Ok(Self {
+                            context: glfw_res,
+                            window: window_res.0,
+                            receiver: window_res.1,
+                            last_pos: (0, 0),
+                            last_size: (width as i32, height as i32),
+                            is_fullscreen: match mode {
+                                glfw::WindowMode::FullScreen(_) => true,
+                                glfw::WindowMode::Windowed => false
+                            }
+                            
+                        })
+                    },
+                    None => {
+                        Err(WindowInitError::CreationError(String::from("Unable to create window")))
                     }
                 }
             },
-            None => {
-                panic!("Unable to create glfw window")
-            }
+            Err(err) => Err(WindowInitError::InitError(err)),
         }
     }
 
-    pub fn process_events(&mut self, first_mouse: &mut bool, last_x: &mut f32, last_y: &mut f32, camera: &mut crate::camera::Camera) {
+    pub fn process_events(&mut self, first_mouse: &mut bool, last_x: &mut f32, last_y: &mut f32, camera: &mut Camera) {
         for (_, event) in glfw::flush_messages(&self.receiver) {
             match event {
                 glfw::WindowEvent::FramebufferSize(width, height) => {
