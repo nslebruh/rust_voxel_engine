@@ -22,7 +22,7 @@ impl World {
         let mut chunks: Vec<Chunk> = Vec::new();
         for i in 0..shape.size() {
             let [x, y, z] = shape.delinearize(i);
-            chunks.push(Chunk::new(vec3(x as i32 + min_val, y as i32 + min_val, z as i32 + min_val), &noise))
+            chunks.push(Chunk::new(vec3(x as i32 + min_val, y as i32, z as i32 + min_val), &noise))
         }
         Self {
             noise,

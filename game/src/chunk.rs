@@ -32,8 +32,8 @@ impl Chunk {
         for i in 0..ChunkSize::SIZE {
             let [x, y, z] = ChunkSize::delinearize(i);
             if (x > 0 && x < 16)  && (y > 0 && y < 16) && (z > 0 && z < 16) {
-                let noise_val = ((noise.get([(x as i32 + x_offset) as f64 / 50.0, (z as i32 + z_offset) as f64 / 50.0]) * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u32;
-                if y <= noise_val / 16 {
+                let noise_val = ((noise.get([(x as i32 + x_offset) as f64 / 25.0, (z as i32 + z_offset) as f64 / 25.0]) * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0).round() as u32;
+                if y + (y_offset as u32) <= noise_val / 2{
                     blocks[i as usize] = Block::STONE
                 }
             }
@@ -62,9 +62,9 @@ impl Chunk {
             &mut buffer
         );
         println!("{}", buffer.quads.num_quads());
-
+        if buffer.quads.num_quads() == 0 {return (Vec::new(), 0, 0)}
         // Some quads were generated.
-        assert!(buffer.quads.num_quads() > 0);
+        //assert!(buffer.quads.num_quads() > 0);
 
         let num_indices = buffer.quads.num_quads() * 6;
         let num_vertices = buffer.quads.num_quads() * 4;
@@ -142,6 +142,9 @@ impl Chunk {
     }
 
     pub unsafe fn draw(&self, texture: &u32, shader: &Shader) {
+        if self.mesh.len() == 0 {
+            return
+        }
         gl::BindVertexArray(self.vao);
         gl::BindTexture(gl::TEXTURE_2D, *texture);
         shader.use_program();
