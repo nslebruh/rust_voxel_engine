@@ -1,8 +1,5 @@
 use block_mesh::{MergeVoxel, Voxel, VoxelVisibility};
 
-pub enum BlockType {
-
-}
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct BoolVoxel(pub bool);

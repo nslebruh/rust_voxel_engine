@@ -20,12 +20,10 @@ use engine::{
     shader::Shader,
     glm::{self, vec3}, na::Unit,
 };
-use gl::types::*;
 use block_mesh::{ndshape::{ConstShape3u32, ConstShape}, GreedyQuadsBuffer, greedy_quads, RIGHT_HANDED_Y_UP_CONFIG};
 
-use block::{BoolVoxel, FULL, EMPTY};
-use data::vertices;
-use ::noise::{Fbm, Perlin, Seedable};
+use block::{FULL, EMPTY};
+use ::noise::{Fbm, Perlin, Seedable, SuperSimplex, utils::{NoiseMap, PlaneMapBuilder, NoiseMapBuilder}};
 
 use crate::chunk::Chunk;
 
@@ -109,6 +107,13 @@ for index in indices.into_iter() {
 }
 
 println!("test_vertices.len(), {}", test_vertices.len());
+
+let super_simplex = SuperSimplex::default();
+
+    write_example_to_file(
+        &PlaneMapBuilder::<_, 2>::new(super_simplex).build(),
+        "super_simplex.png",
+    );
 
     let mut window = Window::init(
         1280,
@@ -263,4 +268,7 @@ fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut [KeyBindi
         let action = window.get_key(binding.key);
         binding.update(action, InputFunctionArguments::new().camera(camera).window(window).delta_time(delta_time).action(&action))
     }
+}
+pub fn write_example_to_file(map: &NoiseMap, filename: &str) {
+    map.write_to_file(filename)
 }

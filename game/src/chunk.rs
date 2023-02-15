@@ -10,7 +10,7 @@ use crate::block::Block;
 use crate::glm::I32Vec3;
 use crate::ConstShape3u32;
 
-type ChunkSize = ConstShape3u32<18, 18, 18>;
+pub type ChunkSize = ConstShape3u32<18, 18, 18>;
 
 #[derive(Debug)]
 pub struct Chunk {
@@ -27,18 +27,15 @@ impl Chunk {
         let y_offset = position.y * 16;
         let z_offset = position.z * 16;
         let mut blocks = [Block::default(); ChunkSize::SIZE as usize];
-        for z in 1..16 {
-            for y in 1..16 {
-                for x in 1..16 {
-                    let noise_val = noise.get([x as f64, y as f64, z as f64]);
-                    let i = ChunkSize::linearize([y, x, z]);
-                    //blocks[i as usize] = Block::STONE;
-
-                    if (noise_val.clamp(-0.5, 0.5) + 0.5) * 16.0 > (y - 1) as f64 {
-                        blocks[i as usize] = Block::STONE;
-                    }
+        for i in 0..ChunkSize::SIZE {
+            let [x, y, z] = ChunkSize::delinearize(i);
+            if (x > 0 && x < 16)  && (y > 0 && y < 16) && (z > 0 && z < 16) {
+                println!();
+                let noise_val = ((noise.get([(x as i32 + x_offset) as f64 / 50.0, (z as i32 + z_offset) as f64 / 50.0]) * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u32;
+                if y <= noise_val / 16 {
+                    blocks[i as usize] = Block::STONE
                 }
-            }
+            } 
         }
         let (mesh, vao, vbo) = Chunk::create_mesh(&blocks);
 

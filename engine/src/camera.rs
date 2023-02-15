@@ -75,9 +75,11 @@ impl Camera {
         match direction {
             CameraMovement::Forward => {
                 self.position += self.front * velocity;
+                //self.position += vec3(self.front.x, 0.0, self.front.z) * velocity;
             },
             CameraMovement::Backward => {
                 self.position += -(self.front * velocity);
+                //self.position += -(vec3(self.front.x, 0.0, self.front.z) * velocity) ;
             },
             CameraMovement::Left => {
                 self.position += -(self.right * velocity);

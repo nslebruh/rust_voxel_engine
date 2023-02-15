@@ -10,4 +10,4 @@ block-mesh = "0.2.0"
 engine = {path = "../engine", version = "0.1.0"}
 gl = "0.14.0"
 image = "0.24.5"
-noise = "0.8.2"
+noise = {version = "0.8.2", features = ["images"]}
