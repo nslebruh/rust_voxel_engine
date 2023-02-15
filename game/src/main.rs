@@ -26,6 +26,7 @@ use block::{FULL, EMPTY};
 use ::noise::{Fbm, Perlin, Seedable, SuperSimplex, utils::{NoiseMap, PlaneMapBuilder, NoiseMapBuilder}};
 
 use crate::chunk::Chunk;
+use crate::world::World;
 
 fn main() {
     let scr_width: u32 = 1280;
@@ -55,60 +56,60 @@ fn main() {
     ];
 
     // A 16^3 chunk with 1-voxel boundary padding.
-pub type ChunkShape = ConstShape3u32<18, 18, 18>;
+    pub type ChunkShape = ConstShape3u32<18, 18, 18>;
 
-// This chunk will cover just a single octant of a sphere SDF (radius 15).
-let mut voxels = [EMPTY; ChunkShape::SIZE as usize];
-for i in 0..ChunkShape::SIZE {
-    let [x, y, z] = ChunkShape::delinearize(i);
-    voxels[i as usize] = if ((x * x + y * y + z * z) as f32).sqrt() < 15.0 {
-        FULL
-    } else {
-        EMPTY
-    };
-}
-let faces = RIGHT_HANDED_Y_UP_CONFIG.faces;
-
-let mut buffer = GreedyQuadsBuffer::new(voxels.len());
-greedy_quads(
-    &voxels,
-    &ChunkShape {},
-    [0; 3],
-    [17; 3],
-    &faces,
-    &mut buffer
-);
-println!("{}", buffer.quads.num_quads());
-
-// Some quads were generated.
-assert!(buffer.quads.num_quads() > 0);
-let num_indices = buffer.quads.num_quads() * 6;
-let num_vertices = buffer.quads.num_quads() * 4;
-let mut indices = Vec::with_capacity(num_indices);
-let mut positions = Vec::with_capacity(num_vertices);
-let mut normals = Vec::with_capacity(num_vertices);
-let mut tex_coords = Vec::with_capacity(num_vertices);
-for (group, face) in buffer.quads.groups.into_iter().zip(faces.into_iter()) {
-    for quad in group.into_iter() {
-        indices.extend_from_slice(&face.quad_mesh_indices(positions.len() as u32));
-        positions.extend_from_slice(&face.quad_mesh_positions(&quad, 1.0));
-        normals.extend_from_slice(&face.quad_mesh_normals());
-        tex_coords.extend_from_slice(&face.tex_coords(
-            RIGHT_HANDED_Y_UP_CONFIG.u_flip_face,
-            true,
-            &quad,
-        ));
+    // This chunk will cover just a single octant of a sphere SDF (radius 15).
+    let mut voxels = [EMPTY; ChunkShape::SIZE as usize];
+    for i in 0..ChunkShape::SIZE {
+        let [x, y, z] = ChunkShape::delinearize(i);
+        voxels[i as usize] = if ((x * x + y * y + z * z) as f32).sqrt() < 15.0 {
+            FULL
+        } else {
+            EMPTY
+        };
     }
-}
-let mut test_vertices: Vec<f32> = Vec::with_capacity(num_indices * 5);
-for index in indices.into_iter() {
-    test_vertices.extend_from_slice(&positions[index as usize]);
-    test_vertices.extend_from_slice(&tex_coords[index as usize])
-}
+    let faces = RIGHT_HANDED_Y_UP_CONFIG.faces;
 
-println!("test_vertices.len(), {}", test_vertices.len());
+    let mut buffer = GreedyQuadsBuffer::new(voxels.len());
+    greedy_quads(
+        &voxels,
+        &ChunkShape {},
+        [0; 3],
+        [17; 3],
+        &faces,
+        &mut buffer
+    );
+    println!("{}", buffer.quads.num_quads());
 
-let super_simplex = SuperSimplex::default();
+    // Some quads were generated.
+    assert!(buffer.quads.num_quads() > 0);
+    let num_indices = buffer.quads.num_quads() * 6;
+    let num_vertices = buffer.quads.num_quads() * 4;
+    let mut indices = Vec::with_capacity(num_indices);
+    let mut positions = Vec::with_capacity(num_vertices);
+    let mut normals = Vec::with_capacity(num_vertices);
+    let mut tex_coords = Vec::with_capacity(num_vertices);
+    for (group, face) in buffer.quads.groups.into_iter().zip(faces.into_iter()) {
+        for quad in group.into_iter() {
+            indices.extend_from_slice(&face.quad_mesh_indices(positions.len() as u32));
+            positions.extend_from_slice(&face.quad_mesh_positions(&quad, 1.0));
+            normals.extend_from_slice(&face.quad_mesh_normals());
+            tex_coords.extend_from_slice(&face.tex_coords(
+                RIGHT_HANDED_Y_UP_CONFIG.u_flip_face,
+                true,
+                &quad,
+            ));
+        }
+    }
+    let mut test_vertices: Vec<f32> = Vec::with_capacity(num_indices * 5);
+    for index in indices.into_iter() {
+        test_vertices.extend_from_slice(&positions[index as usize]);
+        test_vertices.extend_from_slice(&tex_coords[index as usize])
+    }
+
+    println!("test_vertices.len(), {}", test_vertices.len());
+
+    let super_simplex = SuperSimplex::default();
 
     write_example_to_file(
         &PlaneMapBuilder::<_, 2>::new(super_simplex).build(),
@@ -127,6 +128,8 @@ let super_simplex = SuperSimplex::default();
         ).unwrap();
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
+    
+    let world = World::new(0, 4);
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
@@ -254,7 +257,11 @@ let super_simplex = SuperSimplex::default();
             //shader_program.use_program();
             //gl::DrawArrays(gl::TRIANGLES, 0, (test_vertices.len() / 3) as i32);
 
-            chunk.draw(&texture, &shader_program)
+            //chunk.draw(&texture, &shader_program)
+
+            for chunk in world.chunks.iter() {
+                chunk.draw(&texture, &shader_program)
+            }
         }
 
         window.swap_buffers();

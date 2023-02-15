@@ -8,19 +8,21 @@ use crate::glm::vec3;
 pub struct World {
     //loaded_chunks: Vec<Chunk>,
     //chunks_to_load: Vec<Chunk>,
-    chunks: Vec<Chunk>,
+    pub chunks: Vec<Chunk>,
     noise: Fbm<Perlin>,
     min: (i32, i32, i32)
 }
 
 impl World {
     pub fn new(seed: u32, cube_size: u32) -> Self {
-        let shape = RuntimeShape::<u32, 3>::new([cube_size, cube_size, cube_size]);
+        let shape = RuntimeShape::<u32, 2>::new([cube_size; 2]);
         let min_val = -((cube_size % 2) as i32);
         let min = (min_val, min_val, min_val);
         let noise: Fbm<Perlin> = Fbm::<Perlin>::default().set_seed(seed);
-        let mut chunks = Vec::new();
+        let mut chunks: Vec<Chunk> = Vec::new();
         for i in 0..shape.size() {
+            let [x, z] = shape.delinearize(i);
+            chunks.push(Chunk::new(vec3(x as i32 + min_val, 0, z as i32 + min_val), &noise))
         }
         Self {
             noise,

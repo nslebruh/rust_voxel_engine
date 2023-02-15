@@ -3,6 +3,7 @@ use std::mem::size_of;
 
 use block_mesh::{RIGHT_HANDED_Y_UP_CONFIG, greedy_quads, GreedyQuadsBuffer};
 use block_mesh::ndshape::ConstShape;
+use engine::glm::Mat4;
 use engine::shader::Shader;
 use noise::{Fbm, Perlin, NoiseFn};
 
@@ -30,7 +31,6 @@ impl Chunk {
         for i in 0..ChunkSize::SIZE {
             let [x, y, z] = ChunkSize::delinearize(i);
             if (x > 0 && x < 16)  && (y > 0 && y < 16) && (z > 0 && z < 16) {
-                println!();
                 let noise_val = ((noise.get([(x as i32 + x_offset) as f64 / 50.0, (z as i32 + z_offset) as f64 / 50.0]) * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u32;
                 if y <= noise_val / 16 {
                     blocks[i as usize] = Block::STONE
@@ -144,9 +144,20 @@ impl Chunk {
         gl::BindVertexArray(self.vao);
         gl::BindTexture(gl::TEXTURE_2D, *texture);
         shader.use_program();
+        let model = Mat4::trans
+        //let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(pos + (chunk.position * 16)));
+        shader.set_mat4("model", &model);
         gl::DrawArrays(gl::TRIANGLES, 0, (self.mesh.len() / 3) as i32);
         gl::BindVertexArray(0);
         gl::BindTexture(gl::TEXTURE_2D, 0);
 
+    }
+}
+
+pub fn block_pos_to_f32(pos: I32Vec3) -> FPosition {
+    FPosition {
+        x: pos.x as f32,
+        y: pos.y as f32,
+        z: pos.z as f32
     }
 }
