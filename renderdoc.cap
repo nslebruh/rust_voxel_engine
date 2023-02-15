@@ -5,12 +5,12 @@
         "commandLine": "",
         "environment": [
         ],
-        "executable": "C:\\Users\\nsleb\\Documents\\GitHub\\rust_voxel_engine\\game\\target\\debug\\game.exe",
+        "executable": "C:\\Users\\Nathan\\Documents\\GitHub\\rust_voxel_engine\\game\\target\\release\\game.exe",
         "inject": false,
-        "numQueuedFrames": 1,
+        "numQueuedFrames": 0,
         "options": {
             "allowFullscreen": true,
-            "allowVSync": true,
+            "allowVSync": false,
             "apiValidation": false,
             "captureAllCmdLists": false,
             "captureCallstacks": false,
@@ -21,7 +21,7 @@
             "refAllResources": false,
             "verifyBufferAccess": false
         },
-        "queuedFrameCap": 1,
+        "queuedFrameCap": 0,
         "workingDir": ""
     }
 }

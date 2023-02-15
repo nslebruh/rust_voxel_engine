@@ -3,12 +3,12 @@ use std::mem::size_of;
 
 use block_mesh::{RIGHT_HANDED_Y_UP_CONFIG, greedy_quads, GreedyQuadsBuffer};
 use block_mesh::ndshape::ConstShape;
-use engine::glm::Mat4;
+use engine::glm;
 use engine::shader::Shader;
 use noise::{Fbm, Perlin, NoiseFn};
 
 use crate::block::Block;
-use crate::glm::I32Vec3;
+use crate::glm::{I32Vec3, Vec3};
 use crate::ConstShape3u32;
 
 pub type ChunkSize = ConstShape3u32<18, 18, 18>;
@@ -24,6 +24,7 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn new(position: I32Vec3, noise: &Fbm<Perlin>) -> Self {
+        println!("{}", position.y);
         let x_offset = position.x * 16;
         let y_offset = position.y * 16;
         let z_offset = position.z * 16;
@@ -35,7 +36,7 @@ impl Chunk {
                 if y <= noise_val / 16 {
                     blocks[i as usize] = Block::STONE
                 }
-            } 
+            }
         }
         let (mesh, vao, vbo) = Chunk::create_mesh(&blocks);
 
@@ -144,8 +145,7 @@ impl Chunk {
         gl::BindVertexArray(self.vao);
         gl::BindTexture(gl::TEXTURE_2D, *texture);
         shader.use_program();
-        let model = Mat4::trans
-        //let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(pos + (chunk.position * 16)));
+        let model = glm::translation(&Vec3::new(((self.position.x * 15) - 1) as f32, ((self.position.y * 15) + 8 /* size of cube gen */) as f32, ((self.position.z * 15) - 1) as f32,));
         shader.set_mat4("model", &model);
         gl::DrawArrays(gl::TRIANGLES, 0, (self.mesh.len() / 3) as i32);
         gl::BindVertexArray(0);
@@ -154,10 +154,6 @@ impl Chunk {
     }
 }
 
-pub fn block_pos_to_f32(pos: I32Vec3) -> FPosition {
-    FPosition {
-        x: pos.x as f32,
-        y: pos.y as f32,
-        z: pos.z as f32
-    }
-}
+//pub fn chunk_pos_to_f32(pos: I32Vec3) -> Vec3 {
+//    Vec3::new(pos.x as f32, pos.y as f32, pos.z as f32)
+//}

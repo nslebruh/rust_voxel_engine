@@ -129,7 +129,7 @@ fn main() {
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
     
-    let world = World::new(0, 4);
+    let world = World::new(0, 8);
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
