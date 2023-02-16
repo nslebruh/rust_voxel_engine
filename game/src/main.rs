@@ -26,7 +26,7 @@ use block::{FULL, EMPTY};
 use ::noise::{Fbm, Perlin, Seedable, SuperSimplex, utils::{NoiseMap, PlaneMapBuilder, NoiseMapBuilder}};
 
 use crate::chunk::Chunk;
-use crate::world::World;
+pub use crate::world::World;
 
 fn main() {
     let scr_width: u32 = 1280;
@@ -109,12 +109,11 @@ fn main() {
 
     println!("test_vertices.len(), {}", test_vertices.len());
 
-    let super_simplex = SuperSimplex::default();
-
-    write_example_to_file(
-        &PlaneMapBuilder::<_, 2>::new(super_simplex).build(),
-        "super_simplex.png",
-    );
+    //let super_simplex = SuperSimplex::default();
+    //write_example_to_file(
+    //    &PlaneMapBuilder::<_, 2>::new(super_simplex).build(),
+    //    "super_simplex.png",
+    //);
 
     let mut window = Window::init(
         1280,
@@ -129,7 +128,7 @@ fn main() {
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
     
-    let world = World::new(0, 8);
+    let world = World::new(0,  2);
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
@@ -140,8 +139,8 @@ fn main() {
     window.set_scroll_polling(true);
     window.set_cursor_mode(CursorMode::Disabled);
 
-    let noise = Fbm::<Perlin>::default().set_seed(0);
-    let chunk = Chunk::new(vec3(0, 0, 0), &noise);
+    //let noise = Fbm::<Perlin>::default().set_seed(0);
+    //let chunk = Chunk::new(vec3(0, 0, 0), &noise);
 
     let mut vao: u32 = 0;
     let mut vbo: u32 = 0;

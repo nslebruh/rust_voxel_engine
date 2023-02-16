@@ -1,17 +1,75 @@
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+
+fn benchmark(c: &mut Criterion) {
+    let noise: Fbm<Perlin> = Fbm::<Perlin>::default();
+    let mut group = c.benchmark_group("gen chunk");
+    for x in 0..4 {
+        for y in 0..4 {
+            for z in 0..4 {
+                group.bench_with_input(BenchmarkId::new(vec3(x, y, z).to_string(), vec3(x, y, z)), &vec3(x, y, z), |b, vec3| {b.iter(|| Chunk::new(*vec3, &noise))});
+
+            }
+        }
+    }
+    //for size in [KB, 2 * KB, 4 * KB, 8 * KB, 16 * KB].iter() {
+    //    group.throughput(Throughput::Bytes(*size as u64));
+    //    group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+    //        b.iter(|| iter::repeat(0u8).take(size).collect::<Vec<_>>());
+    //    });
+    //}
+    group.finish();
+    //c.bench_function("create_chunk", |b| b.iter(|| Chunk::new(vec3(0, 0, 0), &noise)));
+}
+
+criterion_group!(benches, benchmark);
+criterion_main!(benches);
+
+// 2d heightmap for height
+use block_mesh::ndshape::{RuntimeShape, Shape};
+use noise::{Seedable, MultiFractal};
+use crate::glm::vec3;
+
+#[derive(Debug, Default)]
+pub struct World {
+    //loaded_chunks: Vec<Chunk>,
+    //chunks_to_load: Vec<Chunk>,
+    pub chunks: Vec<Chunk>,
+    noise: Fbm<Perlin>,
+    min: (i32, i32, i32)
+}
+
+impl World {
+    pub fn new(seed: u32, cube_size: u32) -> Self {
+        let shape = RuntimeShape::<u32, 3>::new([cube_size; 3]);
+        let min_val = -((cube_size % 2) as i32);
+        let min = (min_val, min_val, min_val);
+        let noise: Fbm<Perlin> = Fbm::<Perlin>::default().set_seed(seed).set_persistence(0.25);
+        let mut chunks: Vec<Chunk> = Vec::new();
+        for i in 0..shape.size() {
+            let [x, y, z] = shape.delinearize(i);
+            chunks.push(Chunk::new(vec3(x as i32 + min_val, y as i32, z as i32 + min_val), &noise))
+        }
+        Self {
+            noise,
+            chunks,
+            min
+        }
+    }
+
+}
+
 use std::ffi::c_void;
 use std::mem::size_of;
 
 use block_mesh::{RIGHT_HANDED_Y_UP_CONFIG, greedy_quads, GreedyQuadsBuffer};
-use block_mesh::ndshape::ConstShape;
+use block_mesh::ndshape::{ConstShape, ConstShape3u32};
 use engine::glm;
 use engine::shader::Shader;
 use noise::{Fbm, Perlin, NoiseFn};
 
-use crate::block::Block;
 use crate::glm::{I32Vec3, Vec3};
-use crate::ConstShape3u32;
 
-pub type ChunkSize = ConstShape3u32<18, 18, 18>;
+type ChunkSize = ConstShape3u32<18_u32, 18_u32, 18_u32>;
 
 #[derive(Debug)]
 pub struct Chunk {
@@ -45,6 +103,8 @@ impl Chunk {
                 }
             }
         }
+        println!("pos_filled: {pos_filled}");
+        println!("pos_empty: {pos_empty}");
         if pos_empty > 0 && pos_filled == 0 {
             return Self {
                 position,
@@ -59,7 +119,7 @@ impl Chunk {
         // Check last slice for block, if full of block, chunk full
 
         for i in 0..ChunkSize::SIZE {
-            let [x, y, z] = ChunkSize::delinearize(i);
+            let [x, y, z] = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::delinearize(i);
             if (x > 0 && x < 17)  && (y > 0 && y < 17) && (z > 0 && z < 17) {
                 let noise_val = noise_vec[x as usize - 1][z as usize - 1];
                 if y + y_offset <= noise_val {
@@ -99,11 +159,13 @@ impl Chunk {
         let num_vertices = buffer.quads.num_quads() * 4;
         let mut indices = Vec::with_capacity(num_indices);
         let mut positions = Vec::with_capacity(num_vertices);
+        let mut normals = Vec::with_capacity(num_vertices);
         let mut tex_coords = Vec::with_capacity(num_vertices);
         for (group, face) in buffer.quads.groups.into_iter().zip(faces.into_iter()) {
             for quad in group.into_iter() {
                 indices.extend_from_slice(&face.quad_mesh_indices(positions.len() as u32));
                 positions.extend_from_slice(&face.quad_mesh_positions(&quad, 1.0));
+                normals.extend_from_slice(&face.quad_mesh_normals());
                 tex_coords.extend_from_slice(&face.tex_coords(
                     RIGHT_HANDED_Y_UP_CONFIG.u_flip_face,
                     true,
@@ -117,9 +179,10 @@ impl Chunk {
             test_vertices.extend_from_slice(&tex_coords[index as usize])
         }
         println!("test_vertices.len(), {}", test_vertices.len());
-        unsafe {
-            Chunk::setup_mesh(test_vertices)
-        }
+        (test_vertices, 0, 0)
+        //unsafe {
+        //    Chunk::setup_mesh(test_vertices)
+        //}
     }
 
     unsafe fn setup_mesh(data: Vec<f32>) -> (Vec<f32>, u32, u32) {
@@ -187,3 +250,64 @@ impl Chunk {
 //pub fn chunk_pos_to_f32(pos: I32Vec3) -> Vec3 {
 //    Vec3::new(pos.x as f32, pos.y as f32, pos.z as f32)
 //}
+
+use block_mesh::{MergeVoxel, Voxel, VoxelVisibility};
+
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub struct BoolVoxel(pub bool);
+
+pub const EMPTY: BoolVoxel = BoolVoxel(false);
+pub const FULL: BoolVoxel = BoolVoxel(true);
+
+impl Voxel for BoolVoxel {
+    fn get_visibility(&self) -> VoxelVisibility {
+        if *self == EMPTY {
+            VoxelVisibility::Empty
+        } else {
+            VoxelVisibility::Opaque
+        }
+    }
+}
+
+impl MergeVoxel for BoolVoxel {
+    type MergeValue = Self;
+
+    fn merge_value(&self) -> Self::MergeValue {
+        *self
+    }
+
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct Block(pub u8);
+
+impl Default for Block {
+    fn default() -> Self {
+        Self::AIR
+    }
+}
+
+impl Voxel for Block {
+    fn get_visibility(&self) -> VoxelVisibility {
+        if *self == Block::AIR {
+            VoxelVisibility::Empty
+        } else {
+            VoxelVisibility::Opaque
+        }
+    }
+}
+
+impl MergeVoxel for Block {
+    type MergeValue = Self;
+
+    fn merge_value(&self) -> Self::MergeValue {
+        *self
+    }
+}
+
+impl Block {
+    pub const STONE: Block = Block(1);
+    pub const AIR: Block = Block(0);
+}

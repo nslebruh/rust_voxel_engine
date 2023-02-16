@@ -1,7 +1,7 @@
 // 2d heightmap for height
 use block_mesh::ndshape::{ConstShape3u32, RuntimeShape, Shape};
 use crate::chunk::Chunk;
-use noise::{Perlin, Fbm, Seedable};
+use noise::{Perlin, Fbm, Seedable, MultiFractal};
 use crate::glm::vec3;
 
 #[derive(Debug, Default)]
@@ -18,7 +18,7 @@ impl World {
         let shape = RuntimeShape::<u32, 3>::new([cube_size; 3]);
         let min_val = -((cube_size % 2) as i32);
         let min = (min_val, min_val, min_val);
-        let noise: Fbm<Perlin> = Fbm::<Perlin>::default().set_seed(seed);
+        let noise: Fbm<Perlin> = Fbm::<Perlin>::default().set_seed(seed).set_persistence(0.25);
         let mut chunks: Vec<Chunk> = Vec::new();
         for i in 0..shape.size() {
             let [x, y, z] = shape.delinearize(i);
