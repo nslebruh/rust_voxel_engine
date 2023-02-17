@@ -6,6 +6,7 @@ pub mod keybinds;
 pub mod input_functions;
 pub mod buffer;
 pub mod shader;
+pub mod texture_atlas;
 
 pub extern crate nalgebra_glm as glm;
 pub extern crate glfw;

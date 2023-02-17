@@ -38,7 +38,7 @@ fn main() {
     let mut delta_time: f32;
     let mut last_frame: f32 = 0.0;
 
-    let img = image::open(&Path::new("dirt.png")).unwrap().to_rgba8();
+    let img = image::open(&Path::new("stone.png")).unwrap().to_rgba8();
     let img_data = img.to_vec();
 
     let mut keybindings: Vec<KeyBinding> = vec![
@@ -128,7 +128,7 @@ fn main() {
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
     
-    let world = World::new(0,  2);
+    let world = World::new(0,  3);
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
