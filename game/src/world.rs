@@ -3,7 +3,7 @@ use std::collections::HashSet;
 // 2d heightmap for height
 use block_mesh::ndshape::{RuntimeShape, Shape};
 use engine::glm::IVec3;
-use crate::chunk::Chunk;
+use crate::{chunk::Chunk, block::Block};
 use noise::{Perlin, Fbm, Seedable, MultiFractal};
 use crate::glm::vec3;
 
@@ -46,24 +46,58 @@ impl World {
     }
 
     pub fn calculate_visibility(&mut self) {
-        let colliding_positions: Vec<(IVec3, u32)> = vec![
-            (IVec3::new( 1,  0,  0), 0 ),
-            (IVec3::new(-1,  0,  0), 15),
-            (IVec3::new( 0,  1,  0), 0 ),
-            (IVec3::new( 0, -1,  0), 15),
-            (IVec3::new( 0,  0,  1), 0 ), 
-            (IVec3::new( 0,  0, -1), 15),
+        let colliding_positions: Vec<(IVec3, ChunkDirection)> = vec![
+            (IVec3::new( 1,  0,  0), ChunkDirection::PositiveX),
+            (IVec3::new(-1,  0,  0), ChunkDirection::NegativeX),
+            (IVec3::new( 0,  1,  0), ChunkDirection::PositiveY),
+            (IVec3::new( 0, -1,  0), ChunkDirection::NegativeY),
+            (IVec3::new( 0,  0,  1), ChunkDirection::PositiveZ),
+            (IVec3::new( 0,  0, -1), ChunkDirection::NegativeZ),
         ];
         for chunk in self.chunks.clone().iter_mut() {
-            for (position, block_num) in colliding_positions.iter() {
+            for (position, direction) in colliding_positions.iter() {
                 if let Some(x) = self.chunk_positions.get(&(position + chunk.position)) {
-                    let colliding_chunk = &self.chunks[linearise3([x.x as u32, x.y as u32, x.z as u32])];
-                    for i in colliding_chunk.blocks.
+                    let colliding_chunk_blocks = &self.chunks[linearise3([x.x as u32, x.y as u32, x.z as u32])].blocks.unwrap();
+                    match direction {
+                        ChunkDirection::PositiveX => {
+                            for z in 1_u32..17 {
+                                for y in 1_u32..17 {
+                                    let i = linearise3([16, y, z]);
+                                    if colliding_chunk_blocks[i] == Block::AIR {
+                                        break
+                                    }
+                                }
+                            }
+                        },
+                        ChunkDirection::PositiveY => {
+
+                        },
+                        ChunkDirection::PositiveZ => {
+
+                        },
+                        ChunkDirection::NegativeX => {
+
+                        },
+                        ChunkDirection::NegativeY => {
+
+                        },
+                        ChunkDirection::NegativeZ => {
+
+                        },
+                    }
                 }
             }
         }
     }
+}
 
+pub enum ChunkDirection {
+    PositiveX,
+    PositiveY,
+    PositiveZ,
+    NegativeX,
+    NegativeY,
+    NegativeZ
 }
 
 //[1, X, X * Y]
@@ -79,4 +113,8 @@ fn delinearise3(mut i: u32, total_size: [u32; 3]) -> [u32; 3] {
     let y = i / total_size[0];
     let x = i % total_size[0];
     [x, y, z]
+}
+
+fn linearise2(arr: [u32; 2]) -> usize {
+    (arr[0] + arr[0].wrapping_mul(arr[1])) as usize
 }
