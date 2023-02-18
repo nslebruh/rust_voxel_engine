@@ -39,7 +39,9 @@ pub enum ChunkState {
 #[derive(Debug, Clone)]
 pub struct Chunk {
     pub position: I32Vec3,
-    pub blocks: Option<[Block; 5832]>,
+    pub blocks: [Block; 5832],
+    pub has_changed: bool,
+    pub visible_directions: [bool; 6],
     noise_vec: Option<[u32; 256]>,
     blocks_state: BlocksState,
     mesh_state: MeshState,
@@ -66,6 +68,8 @@ impl Chunk {
         let mut blocks;
 
 
+        // Check bottom y slice for air, if full of air, chunk empty
+        // Check top y slice for block, if full of block, chunk full
         for x in 0..16 {
             for z in 0..16 {
                 let noise_val = ((noise.get([(x as i32 + x_offset) as f64, (z as i32 + z_offset) as f64]) * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u32;
@@ -82,31 +86,32 @@ impl Chunk {
             visible = ChunkState::NotVisible;
             blocks_state = BlocksState::Empty;
             mesh_state = MeshState::Empty;
-            blocks = None;
+            blocks = [Block::AIR; 5832];
         } else if pos_full == 256 {
             noise_vec = None;
             visible = ChunkState::Unknown;
             blocks_state = BlocksState::Full;
             mesh_state = MeshState::Uninitialised;
-            blocks = Some(FILLED_CHUNK);
+            blocks = FILLED_CHUNK;
         } else {
             noise_vec = Some(noise_vec1);
             visible = ChunkState::Unknown;
             blocks_state = BlocksState::Uninitialised;
             mesh_state = MeshState::Uninitialised;
-            blocks = None
+            blocks = [Block::AIR; 5832];
         }   
-        // Check first slice for air, if full of air, chunk empty
-        // Check last slice for block, if full of block, chunk full
+        
 
         
         
         if blocks_state == BlocksState::Uninitialised {
-            blocks = Some(Chunk::gen_from_heightmap(position.y, &noise_vec1));
+            blocks = Chunk::gen_from_heightmap(position.y, &noise_vec1);
         }
 
         Self {
             blocks,
+            has_changed: true,
+            visible_directions: [false; 6],
             mesh: None,
             position,
             noise_vec,
@@ -135,14 +140,11 @@ impl Chunk {
     }
 
     pub fn update_block(&mut self, position: I32Vec3, block: Block) {
-        if self.blocks == None {
-            self.blocks = Some([Block::AIR; 5832])
-        }
-        self.blocks.unwrap()[ChunkSize::linearize([position.x as u32, position.y as u32, position.z as u32]) as usize] = block;
+        self.blocks[ChunkSize::linearize([position.x as u32, position.y as u32, position.z as u32]) as usize] = block;
     }
 
     pub fn create_mesh(&mut self) -> (Vec<f32>, u32, u32) {
-        let blocks = self.blocks.unwrap();
+        let blocks = self.blocks;
         let faces = RIGHT_HANDED_Y_UP_CONFIG.faces;
 
         let mut buffer = GreedyQuadsBuffer::new(blocks.len());

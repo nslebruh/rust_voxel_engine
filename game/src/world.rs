@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 // 2d heightmap for height
 use block_mesh::ndshape::{RuntimeShape, Shape};
-use engine::glm::IVec3;
+use engine::glm::{IVec3, Vec3, UVec3};
 use crate::{chunk::Chunk, block::Block};
 use noise::{Perlin, Fbm, Seedable, MultiFractal};
 use crate::glm::vec3;
@@ -54,18 +54,61 @@ impl World {
             (IVec3::new( 0,  0,  1), ChunkDirection::PositiveZ),
             (IVec3::new( 0,  0, -1), ChunkDirection::NegativeZ),
         ];
-        for chunk in self.chunks.clone().iter_mut() {
+
+        let mut checked_chunk_directions = vec![[false; 6]; self.chunks.len()-1];
+
+        // for every chunk in the chunk vec
+        for index in 0..self.chunks.len() {
+            // and for every direction in the 6 ordinal directions
+            for (offset, direction) in colliding_positions.iter() {
+                // if the chunk exists
+                if let Some(bordering_chunk_position) = self.chunk_positions.get(&(offset + &self.chunks[index].position)) {
+                    let bordering_chunk_index = linearise3([bordering_chunk_position.x as u32, bordering_chunk_position.y as u32, bordering_chunk_position.z as u32]);
+                    match direction {
+                        ChunkDirection::PositiveX if !checked_chunk_directions[index][1] => {
+                            for y in 1_u32..17 {
+                                for z in 1_u32..17 {
+                                    self.chunks[index].blocks[linearise3([17, y, z])] = self.chunks[bordering_chunk_index].blocks[linearise3([1, y, z])];
+                                    self.chunks[bordering_chunk_index].blocks[linearise3([0, y, z])] = self.chunks[index].blocks[linearise3([16, y, z])]
+                                }
+                            }
+                        },
+                        ChunkDirection::PositiveY if !checked_chunk_directions[index][3] => {
+
+                        },
+                        ChunkDirection::PositiveZ if !checked_chunk_directions[index][5] => {
+
+                        },
+                        ChunkDirection::NegativeX if !checked_chunk_directions[index][0] => {
+
+                        },
+                        ChunkDirection::NegativeY if !checked_chunk_directions[index][2] => {
+
+                        },
+                        ChunkDirection::NegativeZ if !checked_chunk_directions[index][4] => {
+
+                        },
+                        _ => {}
+                    }
+                }
+                
+            }
+        }
+
+        //for (index, chunk) in self.chunks.iter().enumerate() {}
+
+        for (index, chunk) in self.chunks.clone().iter_mut().enumerate() {
             for (position, direction) in colliding_positions.iter() {
                 if let Some(x) = self.chunk_positions.get(&(position + chunk.position)) {
-                    let colliding_chunk_blocks = &self.chunks[linearise3([x.x as u32, x.y as u32, x.z as u32])].blocks.unwrap();
+                    let bordering_chunk_index = linearise3([x.x as u32, x.y as u32, x.z as u32]);
                     match direction {
                         ChunkDirection::PositiveX => {
                             for z in 1_u32..17 {
                                 for y in 1_u32..17 {
-                                    let i = linearise3([16, y, z]);
-                                    if colliding_chunk_blocks[i] == Block::AIR {
-                                        break
-                                    }
+                                    let bordering_block = self.chunks[bordering_chunk_index].blocks[linearise3([1, y, z])];
+                                    let chunk_block = chunk.blocks[linearise3([16, y, z])];
+                                    chunk.blocks[linearise3([17, y, z])] = bordering_block;
+                                    self.chunks[bordering_chunk_index].blocks[linearise3([0, y, z])] = chunk_block;
                                 }
                             }
                         },
