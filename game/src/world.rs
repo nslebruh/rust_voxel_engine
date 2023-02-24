@@ -22,9 +22,18 @@ pub struct World {
 impl World {
     pub fn new(seed: u32, cube_size: u32, tall: bool) -> Self {
         let min_val = -((cube_size % 2) as i32);
-        
-        let shape = RuntimeShape::<u32, 3>::new([cube_size, 16, cube_size]);
-        let min = (min_val, -16, min_val);
+        let shape;
+        let min;
+        let total_size;
+        if tall {
+            shape = RuntimeShape::<u32, 3>::new([cube_size, 16, cube_size]);
+            min = (min_val, -16, min_val);
+            total_size = (cube_size, 16, cube_size);
+        } else {
+            shape = RuntimeShape::<u32, 3>::new([cube_size; 3]);
+            min = (min_val, min_val, min_val);
+            total_size = (cube_size, cube_size, cube_size);
+        }
 
         let noise: Fbm<Perlin> = Fbm::<Perlin>::default().set_seed(seed).set_persistence(0.25);
 
@@ -43,7 +52,7 @@ impl World {
             chunks,
             chunk_positions,
             min,
-            total_size: (cube_size, 16, cube_size)
+            total_size
         };
         for k in 0..shape.usize() {
             output.calculate_visibility(output.chunks[k].position);
