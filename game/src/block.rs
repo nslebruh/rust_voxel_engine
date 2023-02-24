@@ -55,6 +55,9 @@ impl MergeVoxel for Block {
 }
 
 impl Block {
-    pub const STONE: Block = Block(1);
     pub const AIR: Block = Block(0);
+    pub const WATER: Block = Block(4);
+    pub const DIRT: Block = Block(1);
+    pub const GRASS: Block = Block(2);
+    pub const STONE: Block = Block(3);
 }
