@@ -5,7 +5,7 @@
         "commandLine": "",
         "environment": [
         ],
-        "executable": "C:\\Users\\Nathan\\Documents\\GitHub\\rust_voxel_engine\\game\\target\\release\\game.exe",
+        "executable": "C:\\Users\\nsleb\\Documents\\GitHub\\rust_voxel_engine\\game\\target\\release\\game.exe",
         "inject": false,
         "numQueuedFrames": 0,
         "options": {

@@ -140,11 +140,13 @@ impl Chunk {
         let num_vertices = buffer.quads.num_quads() * 4;
         let mut indices = Vec::with_capacity(num_indices);
         let mut positions = Vec::with_capacity(num_vertices);
+        let mut normals = Vec::with_capacity(num_vertices);
         let mut tex_coords = Vec::with_capacity(num_vertices);
         for (group, face) in buffer.quads.groups.into_iter().zip(faces.into_iter()) {
             for quad in group.into_iter() {
                 indices.extend_from_slice(&face.quad_mesh_indices(positions.len() as u32));
                 positions.extend_from_slice(&face.quad_mesh_positions(&quad, 1.0));
+                normals.extend_from_slice(&face.quad_mesh_normals());
                 tex_coords.extend_from_slice(&face.tex_coords(
                     RIGHT_HANDED_Y_UP_CONFIG.u_flip_face,
                     true,
@@ -155,6 +157,7 @@ impl Chunk {
         let mut test_vertices: Vec<f32> = Vec::with_capacity(num_indices * 5);
         for index in indices.into_iter() {
             test_vertices.extend_from_slice(&positions[index as usize]);
+            test_vertices.extend_from_slice(&normals[index as usize]);
             test_vertices.extend_from_slice(&tex_coords[index as usize])
         }
         println!("test_vertices.len(), {}", test_vertices.len());
@@ -186,24 +189,34 @@ impl Chunk {
             gl::STATIC_DRAW
         );
 
-        gl::EnableVertexAttribArray(0);
+        gl::EnableVertexAttribArray(0); // position coords
         gl::VertexAttribPointer(
             0,
             3,
             gl::FLOAT,
             gl::FALSE,
-            (5 * size_of::<f32>()).try_into().unwrap(),
+            (8 * size_of::<f32>()).try_into().unwrap(),
             std::ptr::null(),
         );
 
-        gl::EnableVertexAttribArray(1);
+        gl::EnableVertexAttribArray(1); // normal coords
         gl::VertexAttribPointer(
             1,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            (8 * size_of::<f32>()).try_into().unwrap(),
+            (3 * size_of::<f32>()) as *const c_void,
+        );
+
+        gl::EnableVertexAttribArray(2); // texture coords
+        gl::VertexAttribPointer(
+            2,
             2,
             gl::FLOAT,
             gl::FALSE,
-            (5 * size_of::<f32>()).try_into().unwrap(),
-            (3 * size_of::<f32>()) as *const c_void,
+            (8 * size_of::<f32>()).try_into().unwrap(),
+            (6 * size_of::<f32>()) as *const c_void,
         );
 
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);

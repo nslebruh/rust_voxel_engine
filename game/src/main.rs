@@ -135,6 +135,7 @@ fn main() {
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
+        gl::Enable(gl::CULL_FACE);
     }
     window.make_current();
     window.set_cursor_pos_polling(true);
@@ -142,8 +143,6 @@ fn main() {
     window.set_scroll_polling(true);
     window.set_cursor_mode(CursorMode::Disabled);
 
-    //let noise = Fbm::<Perlin>::default().set_seed(0);
-    //let chunk = Chunk::new(vec3(0, 0, 0), &noise);
 
     let mut vao: u32 = 0;
     let mut vbo: u32 = 0;
