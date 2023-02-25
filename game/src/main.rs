@@ -1,10 +1,10 @@
 extern crate gl;
 
-mod data;
 mod noise;
 mod chunk;
 mod block;
 mod world;
+mod player;
 
 use std::{mem::size_of, ffi::c_void, path::Path};
 
@@ -18,14 +18,17 @@ use engine::{
     },
     input_functions::*,
     shader::Shader,
-    glm::{self, vec3}, na::Unit,
+    glm::{
+        self,
+        vec3
+    },
+    na::Unit,
 };
 use block_mesh::{ndshape::{ConstShape3u32, ConstShape}, GreedyQuadsBuffer, greedy_quads, RIGHT_HANDED_Y_UP_CONFIG};
 
 use block::{FULL, EMPTY};
 use ::noise::{Fbm, Perlin, Seedable, SuperSimplex, utils::{NoiseMap, PlaneMapBuilder, NoiseMapBuilder}};
 
-use crate::chunk::Chunk;
 pub use crate::world::World;
 
 fn main() {
@@ -128,7 +131,7 @@ fn main() {
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
     
-    let world = World::new(0, 2, false);
+    let world = World::new(0, 16, true);
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);

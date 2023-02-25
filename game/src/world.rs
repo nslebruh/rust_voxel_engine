@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 // 2d heightmap for height
-use block_mesh::ndshape::{RuntimeShape, Shape};
+use block_mesh::ndshape::{RuntimeShape, Shape, ConstShape3u32, ConstShape};
 use engine::glm::IVec3;
 use crate::chunk::Chunk;
 use noise::{Perlin, Fbm, Seedable, MultiFractal};
@@ -64,134 +64,107 @@ impl World {
     }
 
     fn calculate_visibility(&mut self, chunk_position: IVec3) {
+        let normal_chunk_pos = [(chunk_position.x - self.min.0) as u32, chunk_position.y as u32, (chunk_position.z - self.min.2) as u32];
         let runtime_shape = RuntimeShape::<u32, 3>::new([self.total_size.0, self.total_size.1, self.total_size.2]);
+        println!("normal_chunk_pos: {:?}", normal_chunk_pos);
+        let chunk_index = runtime_shape.linearize(normal_chunk_pos) as usize;
+        let mut new_chunk = self.chunks[chunk_index].clone();
 
         if self.chunk_positions.contains(&(chunk_position + IVec3::new(1, 0, 0))) {
-            println!("{}", chunk_position + IVec3::new(1, 0, 0));
+            let pos = chunk_position + IVec3::new(1, 0, 0);
+            let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
+            let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
+            let bordering_chunk = self.chunks[border_chunk_index].clone();
+            println!("Chunk pos: {}, {}, {}, x+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            for y in 1_u32..17 {
+                for z in 1_u32..17 {
+                    let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([17, y, z]) as usize;
+                    let bordering_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([1, y, z]) as usize;
+                    let bordering_block = bordering_chunk.blocks[bordering_block_index];
+                    new_chunk.blocks[chunk_block_index] = bordering_block;
+                }
+            }
         }
 
+        if self.chunk_positions.contains(&(chunk_position + IVec3::new(-1, 0, 0))) {
+            let pos = chunk_position + IVec3::new(-1, 0, 0);
+            let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
+            let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
+            let bordering_chunk = self.chunks[border_chunk_index].clone();
+            println!("Chunk pos: {}, {}, {},  x- pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            for y in 1_u32..17 {
+                for z in 1_u32..17 {
+                    let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([0, y, z]) as usize;
+                    let bordering_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([16, y, z]) as usize;
+                    let bordering_block = bordering_chunk.blocks[bordering_block_index];
+                    new_chunk.blocks[chunk_block_index] = bordering_block;
+                }
+            }
+        }
+
+        if self.chunk_positions.contains(&(chunk_position + IVec3::new(0, 1, 0))) {
+            let pos = chunk_position + IVec3::new(0, 1, 0);
+            let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
+            let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
+            let bordering_chunk = self.chunks[border_chunk_index].clone();
+            println!("Chunk pos: {}, {}, {}, y+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            for x in 1_u32..17 {
+                for z in 1_u32..17 {
+                    let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, 17, z]) as usize;
+                    let bordering_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, 1, z]) as usize;
+                    let bordering_block = bordering_chunk.blocks[bordering_block_index];
+                    new_chunk.blocks[chunk_block_index] = bordering_block;
+                }
+            }
+        }
+
+        if self.chunk_positions.contains(&(chunk_position + IVec3::new(0, -1, 0))) {
+            let pos = chunk_position + IVec3::new(0, -1, 0);
+            let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
+            let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
+            let bordering_chunk = self.chunks[border_chunk_index].clone();
+            println!("Chunk pos: {}, {}, {}, y+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            for x in 1_u32..17 {
+                for z in 1_u32..17 {
+                    let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, 0, z]) as usize;
+                    let bordering_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, 16, z]) as usize;
+                    let bordering_block = bordering_chunk.blocks[bordering_block_index];
+                    new_chunk.blocks[chunk_block_index] = bordering_block;
+                }
+            }
+        }
+
+        if self.chunk_positions.contains(&(chunk_position + IVec3::new(0, 0, 1))) {
+            let pos = chunk_position + IVec3::new(0, 0, 1);
+            let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
+            let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
+            let bordering_chunk = self.chunks[border_chunk_index].clone();
+            println!("Chunk pos: {}, {}, {}, z+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            for x in 1_u32..17 {
+                for y in 1_u32..17 {
+                    let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, y, 17]) as usize;
+                    let bordering_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, y, 1]) as usize;
+                    let bordering_block = bordering_chunk.blocks[bordering_block_index];
+                    new_chunk.blocks[chunk_block_index] = bordering_block;
+                }
+            }
+        }
+
+        if self.chunk_positions.contains(&(chunk_position + IVec3::new(0, 0, -1))) {
+            let pos = chunk_position + IVec3::new(0, 0, -1);
+            let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
+            let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
+            let bordering_chunk = self.chunks[border_chunk_index].clone();
+            println!("Chunk pos: {}, {}, {}, z+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            for x in 1_u32..17 {
+                for y in 1_u32..17 {
+                    let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, y, 0]) as usize;
+                    let bordering_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, y, 16]) as usize;
+                    let bordering_block = bordering_chunk.blocks[bordering_block_index];
+                    new_chunk.blocks[chunk_block_index] = bordering_block;
+                }
+            }
+        }
+        self.chunks[chunk_index] = new_chunk;
     }
-
-    //pub fn calculate_visibility(&mut self, total_size: [u32; 3]) {
-    //    //let new_chunks = self.chunks.clone();
-    //    let shape = RuntimeShape::<u32, 3>::new(total_size);
-    //    let colliding_positions: Vec<(IVec3, ChunkDirection)> = vec![
-    //        (IVec3::new( 1,  0,  0), ChunkDirection::PositiveX),
-    //        (IVec3::new(-1,  0,  0), ChunkDirection::NegativeX),
-    //        (IVec3::new( 0,  1,  0), ChunkDirection::PositiveY),
-    //        (IVec3::new( 0, -1,  0), ChunkDirection::NegativeY),
-    //        (IVec3::new( 0,  0,  1), ChunkDirection::PositiveZ),
-    //        (IVec3::new( 0,  0, -1), ChunkDirection::NegativeZ),
-    //    ];
-    //    let mut checked_chunk_directions = vec![[false; 6]; self.chunks.len()];
-    //    // for every chunk in the chunk vec
-    //    for index in 0..self.chunks.len() {
-    //        // and for every direction in the 6 ordinal directions
-    //        for (offset, direction) in colliding_positions.iter() {
-    //            // if the bordering chunk exists
-    //            if let Some(bordering_chunk_position) = self.chunk_positions.get(&(offset + &self.chunks[index].position)) {
-    //                // get the bordering chunk position
-    //                let bordering_chunk_index = shape.linearize([(bordering_chunk_position.x - self.min.0) as u32, (bordering_chunk_position.y - self.min.1) as u32, (bordering_chunk_position.z - self.min.2) as u32]);
-    //                println!("{bordering_chunk_index}");
-    //                // match the direction of the bordering chunk
-    //                match direction {
-    //                    ChunkDirection::PositiveX if !checked_chunk_directions[index][1] => {
-    //                        for y in 1_u32..17 {
-    //                            for z in 1_u32..17 {
-    //                                // set the right border block to the leftmost block of the bordering chunk
-    //                                self.chunks[index].blocks[shape.linearize([17, y, z]) as usize] = self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([1, y, z]) as usize];
-    //                                // set the left border block of the bordering chunk to the rightmost block
-    //                                self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([0, y, z]) as usize] = self.chunks[index].blocks[shape.linearize([16, y, z]) as usize];
-    //                                // set both checked values to true
-    //                                checked_chunk_directions[index][0] = true;
-    //                                checked_chunk_directions[bordering_chunk_index as usize][1] = true;
-    //                            }
-    //                        }
-    //                    },
-    //                    ChunkDirection::PositiveY if !checked_chunk_directions[index][3] => {
-    //                        for x in 1..17 {
-    //                            for z in 1..17 {
-    //                                self.chunks[index].blocks[shape.linearize([x, 17, z]) as usize] = self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([x, 1, z]) as usize];
-    //                                self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([x, 0, z]) as usize] = self.chunks[index].blocks[shape.linearize([x, 16, z]) as usize];
-    //                                checked_chunk_directions[index][2] = true;
-    //                                checked_chunk_directions[bordering_chunk_index as usize][3] = true;
-    //                            }
-    //                        }
-    //                    },
-    //                    ChunkDirection::PositiveZ if !checked_chunk_directions[index][5] => {
-    //                        for x in 1..17 {
-    //                            for y in 1..17 {
-    //                                self.chunks[index].blocks[shape.linearize([x, y, 17]) as usize] = self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([x, y, 1]) as usize];
-    //                                self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([x, y, 0]) as usize] = self.chunks[index].blocks[shape.linearize([x, y, 16]) as usize];
-    //                                checked_chunk_directions[index][4] = true;
-    //                                checked_chunk_directions[bordering_chunk_index as usize][5] = true;
-    //                            }
-    //                        }
-    //                    },
-    //                    ChunkDirection::NegativeX if !checked_chunk_directions[index][0] => {
-    //                        for y in 1..17 {
-    //                            for z in 1..17 {
-    //                                self.chunks[index].blocks[shape.linearize([0, y, z]) as usize] = self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([16, y, z]) as usize];
-    //                                self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([17, y, z]) as usize] = self.chunks[index].blocks[shape.linearize([1, y, z]) as usize];
-    //                                checked_chunk_directions[index][1] = true;
-    //                                checked_chunk_directions[bordering_chunk_index as usize][0] = true;
-    //                            }
-    //                        }
-    //                    },
-    //                    ChunkDirection::NegativeY if !checked_chunk_directions[index][2] => {
-    //                        for x in 1..17 {
-    //                            for z in 1..17 {
-    //                                self.chunks[index].blocks[shape.linearize([x, 0, z]) as usize] = self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([x, 16, z]) as usize];
-    //                                self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([x, 17, z]) as usize] = self.chunks[index].blocks[shape.linearize([x, 1, z]) as usize];
-    //                                checked_chunk_directions[index][3] = true;
-    //                                checked_chunk_directions[bordering_chunk_index as usize][2] = true;
-    //                            }
-    //                        }
-    //                    },
-    //                    ChunkDirection::NegativeZ if !checked_chunk_directions[index][4] => {
-    //                        for x in 1..17 {
-    //                            for y in 1..17 {
-    //                                self.chunks[index].blocks[shape.linearize([x, y, 0]) as usize] = self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([x, y, 16]) as usize];
-    //                                self.chunks[bordering_chunk_index as usize].blocks[shape.linearize([x, y, 17]) as usize] = self.chunks[index].blocks[shape.linearize([x, y, 1]) as usize];
-    //                                checked_chunk_directions[index][5] = true;
-    //                                checked_chunk_directions[bordering_chunk_index as usize][4] = true;
-    //                            }
-    //                        }
-    //                    },
-    //                    _ => {}
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
 }
-
-pub enum ChunkDirection {
-    PositiveX,
-    PositiveY,
-    PositiveZ,
-    NegativeX,
-    NegativeY,
-    NegativeZ
-}
-
-//[1, X, X * Y]
-// p[0] + Self::STRIDES[1].wrapping_mul(p[1]) + Self::STRIDES[2].wrapping_mul(p[2])
-
-//fn linearise3(p: [u32; 3]) -> usize {
-//    (p[0] + p[0].wrapping_mul(p[1]) + (p[0] * p[1]).wrapping_mul(p[2])) as usize
-//}
-
-
-
-//fn delinearise3(mut i: u32, total_size: [u32; 3]) -> [u32; 3] {
-//    let z = i / (total_size[0] * total_size[1]);
-//    i -= z * (total_size[0] * total_size[1]);
-//    let y = i / total_size[0];
-//    let x = i % total_size[0];
-//    [x, y, z]
-//}
-
-//fn linearise2(arr: [u32; 2]) -> usize {
-//    (arr[0] + arr[0].wrapping_mul(arr[1])) as usize
-//}
