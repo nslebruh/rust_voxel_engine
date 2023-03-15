@@ -48,7 +48,7 @@ pub struct InputFunctionArguments<'a> {
     pub window: Option<&'a mut Window>,
     pub camera: Option<&'a mut Camera>,
     pub delta_time: Option<&'a f32>,
-    pub action: Option<&'a Action>
+    pub action: Option<Action>,
 }
 
 impl<'a> InputFunctionArguments<'a> {
@@ -82,7 +82,7 @@ impl<'a> InputFunctionArguments<'a> {
         }
     }
 
-    pub fn action(self, action: &'a Action) -> Self {
+    pub fn action(self, action: Action) -> Self {
         Self {
             action: Some(action),
             ..self

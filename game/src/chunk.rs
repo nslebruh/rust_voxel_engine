@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ffi::c_void;
 use std::mem::size_of;
 
@@ -16,6 +17,7 @@ pub type NoiseSize = ConstShape2u32<16, 16>;
 
 #[derive(Debug, Clone)]
 pub struct Chunk {
+    pub filled_blocks: HashSet<(u32, u32, u32)>,
     pub position: I32Vec3,
     pub blocks: [Block; 5832],
     pub has_changed: bool,
@@ -35,6 +37,7 @@ impl Chunk {
         let mut noise_vec: [u32; 256] = [0; 256];
         let mut pos_full: u32 = 0;
         let mut pos_empty: u32 = 0;
+        let mut filled_blocks = HashSet::new();
 
         let visible;
         let is_empty;
@@ -45,7 +48,7 @@ impl Chunk {
         // Check top y slice for block, if full of block, chunk full
         for x in 0..16 {
             for z in 0..16 {
-                let noise_val = ((noise.get([(x as i32 + x_offset) as f64 / 100.0, (z as i32 + z_offset) as f64 / 100.0]) * 0.5 + 0.5).clamp(0.0, 1.0) * 128.0) as u32 + 128;
+                let noise_val = ((noise.get([(x as i32 + x_offset) as f64 / 200.0, (z as i32 + z_offset) as f64 / 200.0]) * 0.5 + 0.5).clamp(0.0, 1.0) * 128.0) as u32 + 128;
                 noise_vec[NoiseSize::linearize([x, z]) as usize] = noise_val;
                 if y_offset >= noise_val {
                     pos_empty += 1
@@ -66,7 +69,8 @@ impl Chunk {
             for i in 0..ChunkSize::SIZE {
                 let [x, y, z] = ChunkSize::delinearize(i);
                 if (x > 0 && x < 17)  && (y > 0 && y < 17) && (z > 0 && z < 17) {
-                    blocks[i as usize] = Block::DIRT
+                    filled_blocks.insert((x - 1, y - 1, z - 1));
+                    blocks[i as usize] = Block::STONE
                 }
             }
         } else {
@@ -78,6 +82,7 @@ impl Chunk {
                 if (x > 0 && x < 17)  && (y > 0 && y < 17) && (z > 0 && z < 17) {
                     let noise_val = noise_vec[NoiseSize::linearize([x - 1, z - 1]) as usize];
                     if y + y_offset <= noise_val {
+                        filled_blocks.insert((x - 1, y - 1, z - 1));
                         blocks[i as usize] = Block::DIRT
                     }
                 }
@@ -86,6 +91,7 @@ impl Chunk {
 
         Self {
             blocks,
+            filled_blocks,
             is_empty,
             has_changed: true,
             mesh: None,

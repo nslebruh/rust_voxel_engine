@@ -40,7 +40,8 @@ pub struct Camera {
     pub movement_speed: f32,
     pub mouse_sensitivity: f32,
     pub zoom: f32,
-    pub cursor_mode: bool
+    pub cursor_mode: bool,
+    pub last_frame_movements: Vec<CameraMovement>,
 }
 
 impl Default for Camera {
@@ -56,7 +57,8 @@ impl Default for Camera {
             movement_speed: SPEED,
             mouse_sensitivity: SENSITIVTY,
             zoom: ZOOM,
-            cursor_mode: false
+            cursor_mode: false,
+            last_frame_movements: Vec::new()
 
         };
         camera.update_camera_vectors();
@@ -70,6 +72,7 @@ impl Camera {
     }
 
     pub fn process_action_input(&mut self, direction: CameraMovement, delta_time: &f32) {
+        //let last_position = self.position.clone();
         let velocity = self.movement_speed * *delta_time;
 
         match direction {
@@ -113,6 +116,35 @@ impl Camera {
         }
 
         self.update_camera_vectors()
+    }
+    pub fn process_input_vector(&self, vector: Vec<CameraMovement>, delta_time: &f32) -> OPoint<f32, Const<3>> {
+        let mut current_position = self.position.clone();
+        let velocity = self.movement_speed * *delta_time;
+        for direction in vector {
+            match direction {
+                CameraMovement::Forward => {
+                    current_position += self.front * velocity;
+                    //current_position += vec3(self.front.x, 1.0, self.front.z) * velocity;
+                },
+                CameraMovement::Backward => {
+                    current_position += -(self.front * velocity);
+                    //current_position += -(vec3(self.front.x, 1.0, self.front.z) * velocity) ;
+                },
+                CameraMovement::Left => {
+                    current_position += -(self.right * velocity);
+                },
+                CameraMovement::Right => {
+                    current_position += self.right * velocity;
+                },
+                CameraMovement::Up => {
+                    current_position += self.world_up * velocity;
+                },
+                CameraMovement::Down => {
+                    current_position += -(self.world_up * velocity);
+                },
+            }
+        }
+        current_position
     }
 
     pub fn process_scroll_input(&mut self, y_offset: f32) {

@@ -3,24 +3,26 @@ use std::collections::HashSet;
 // 2d heightmap for height
 use block_mesh::ndshape::{RuntimeShape, Shape, ConstShape3u32, ConstShape};
 use engine::glm::IVec3;
-use crate::chunk::Chunk;
+use crate::{chunk::Chunk, player::Player};
 use noise::{Perlin, Fbm, Seedable, MultiFractal};
 use crate::glm::vec3;
 
 #[derive(Debug, Default)]
 pub struct World {
+    pub current_chunk: IVec3,
     //loaded_chunks: Vec<Chunk>,
     //chunks_to_load: Vec<Chunk>,
     //chunks_to_unload: Vec<Chunk>,
-    chunk_positions: HashSet<IVec3>,
+    pub chunk_positions: HashSet<IVec3>,
     pub chunks: Vec<Chunk>,
+    pub player: Player,
     noise: Fbm<Perlin>,
-    min: (i32, i32, i32),
+    pub min: (i32, i32, i32),
     total_size: (u32, u32, u32)
 }
 
 impl World {
-    pub fn new(seed: u32, cube_size: u32, tall: bool) -> Self {
+    pub fn new(seed: u32, cube_size: u32, tall: bool, player: Player) -> Self {
         let min_val = -((cube_size % 2) as i32);
         let shape;
         let min;
@@ -48,11 +50,13 @@ impl World {
             chunk_positions.insert(vec3(x as i32 + min_val, y as i32, z as i32 + min_val));
         }
         let mut output = Self {
+            current_chunk: IVec3::new(0, 0, 0),
             noise,
             chunks,
             chunk_positions,
             min,
-            total_size
+            total_size,
+            player
         };
         for k in 0..shape.usize() {
             output.calculate_visibility(output.chunks[k].position);
@@ -66,7 +70,7 @@ impl World {
     fn calculate_visibility(&mut self, chunk_position: IVec3) {
         let normal_chunk_pos = [(chunk_position.x - self.min.0) as u32, chunk_position.y as u32, (chunk_position.z - self.min.2) as u32];
         let runtime_shape = RuntimeShape::<u32, 3>::new([self.total_size.0, self.total_size.1, self.total_size.2]);
-        println!("normal_chunk_pos: {:?}", normal_chunk_pos);
+        //println!("normal_chunk_pos: {:?}", normal_chunk_pos);
         let chunk_index = runtime_shape.linearize(normal_chunk_pos) as usize;
         let mut new_chunk = self.chunks[chunk_index].clone();
 
@@ -75,7 +79,7 @@ impl World {
             let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
             let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
             let bordering_chunk = self.chunks[border_chunk_index].clone();
-            println!("Chunk pos: {}, {}, {}, x+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            //println!("Chunk pos: {}, {}, {}, x+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
             for y in 1_u32..17 {
                 for z in 1_u32..17 {
                     let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([17, y, z]) as usize;
@@ -91,7 +95,7 @@ impl World {
             let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
             let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
             let bordering_chunk = self.chunks[border_chunk_index].clone();
-            println!("Chunk pos: {}, {}, {},  x- pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            //println!("Chunk pos: {}, {}, {},  x- pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
             for y in 1_u32..17 {
                 for z in 1_u32..17 {
                     let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([0, y, z]) as usize;
@@ -107,7 +111,7 @@ impl World {
             let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
             let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
             let bordering_chunk = self.chunks[border_chunk_index].clone();
-            println!("Chunk pos: {}, {}, {}, y+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            //println!("Chunk pos: {}, {}, {}, y+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
             for x in 1_u32..17 {
                 for z in 1_u32..17 {
                     let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, 17, z]) as usize;
@@ -123,7 +127,7 @@ impl World {
             let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
             let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
             let bordering_chunk = self.chunks[border_chunk_index].clone();
-            println!("Chunk pos: {}, {}, {}, y+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            //println!("Chunk pos: {}, {}, {}, y+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
             for x in 1_u32..17 {
                 for z in 1_u32..17 {
                     let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, 0, z]) as usize;
@@ -139,7 +143,7 @@ impl World {
             let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
             let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
             let bordering_chunk = self.chunks[border_chunk_index].clone();
-            println!("Chunk pos: {}, {}, {}, z+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            //println!("Chunk pos: {}, {}, {}, z+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
             for x in 1_u32..17 {
                 for y in 1_u32..17 {
                     let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, y, 17]) as usize;
@@ -155,7 +159,7 @@ impl World {
             let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32];
             let border_chunk_index = runtime_shape.linearize(normal_pos) as usize;
             let bordering_chunk = self.chunks[border_chunk_index].clone();
-            println!("Chunk pos: {}, {}, {}, z+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
+            //println!("Chunk pos: {}, {}, {}, z+ pos: {}, {}, {}", chunk_position.x, chunk_position.y, chunk_position.z, pos.x, pos.y, pos.z);
             for x in 1_u32..17 {
                 for y in 1_u32..17 {
                     let chunk_block_index = <ConstShape3u32<18_u32, 18_u32, 18_u32> as ConstShape<3>>::linearize([x, y, 0]) as usize;
@@ -166,5 +170,12 @@ impl World {
             }
         }
         self.chunks[chunk_index] = new_chunk;
+    }
+
+    pub fn calc_chunk_index(&self, pos: IVec3) -> usize {
+        let shape = RuntimeShape::<u32, 3>::new([self.total_size.0, self.total_size.1, self.total_size.2]);
+        let normal_pos = [(pos.x - self.min.0) as u32, pos.y as u32, (pos.z - self.min.2) as u32]; 
+        shape.linearize(normal_pos) as usize
+        
     }
 }
